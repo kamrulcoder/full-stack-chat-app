@@ -7,6 +7,9 @@ import mongoose from "mongoose"
 import cookieParser from 'cookie-parser';
 import cors from "cors"
 
+import path from "path";
+import { fileURLToPath } from "url";
+
 
 
 
@@ -27,17 +30,14 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(cookieParser())
-const allowedOrigins = ['http://localhost:5173', 'https://your-production-react-app.com'];
-const __dirname = path.resolve();
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",")
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // If you need to send cookies or authorization headers
+  origin: (origin, cb) =>
+    !origin || allowedOrigins.includes(origin)
+      ? cb(null, true)
+      : cb(new Error("Not allowed by CORS")),
+  credentials: true
 };
 
 app.use(cors(corsOptions));
@@ -54,13 +54,14 @@ app.use("/api/messages", messagesRoute)
 
 
 
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../client/dist")));
+// ----- Serve Frontend -----
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, "../../client/dist")));
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client", "dist", "index.html"));
-  });
-}
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../../client/dist/index.html"));
+});
 
 
 // ===============================
