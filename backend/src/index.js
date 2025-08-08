@@ -6,23 +6,18 @@ import dotenv from "dotenv"
 import mongoose from "mongoose"
 import cookieParser from 'cookie-parser';
 import cors from "cors"
-
-import path from "path";
-import { fileURLToPath } from "url";
-
-
-
-
-
-
-
 // ========================
 // import all routes here  
 // ========================
 import authRoute from "./routes/auth.route.js"
 import messagesRoute from "./routes/messages.route.js"
 import { app, server } from "./lib/socket.js"
-import path from "path";
+
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 // implement all global middleware 
@@ -30,20 +25,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(cookieParser())
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",")
-
-const corsOptions = {
-  origin: (origin, cb) =>
-    !origin || allowedOrigins.includes(origin)
-      ? cb(null, true)
-      : cb(new Error("Not allowed by CORS")),
-  credentials: true
-};
-
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 dotenv.config();
-
-
 
 // ===============================
 // All routes implement here   
@@ -54,16 +42,15 @@ app.use("/api/messages", messagesRoute)
 
 
 
-// ----- Serve Frontend -----
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, "../../client/dist")));
+//  ----- Serve Frontend -----
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../../client/dist/index.html"));
-});
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
 
-
+  app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+}
 // ===============================
 // Mongodb connect with server   
 // ===============================
@@ -82,6 +69,7 @@ async function connectToDatabase() {
 }
 
 connectToDatabase();
+
 
 
 
